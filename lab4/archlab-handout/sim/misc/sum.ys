@@ -1,0 +1,57 @@
+# Execution begins at address 0 
+	.pos 0
+	irmovq stack, %rsp  	# Set up stack pointer
+	call main		# Execute main program
+	halt			# Terminate program 
+
+# Sample linked list
+	.align 8
+ele1:
+	.quad 0x00a
+	.quad ele2
+ele2:
+	.quad 0x0b0
+	.quad ele3
+ele3:
+	.quad 0xc00
+	.quad 0	
+
+
+
+main:
+	irmovq ele1, %rdi
+	call rsum_list
+	ret
+
+
+sum_list:
+	xorq %rax, %rax
+	jmp test
+loop:
+	mrmovq (%rdi), %rbx
+	mrmovq 0x8(%rdi), %rdi
+	addq %rbx, %rax
+test:
+	andq %rdi, %rdi
+	jne loop
+	ret
+
+
+	
+rsum_list:
+	pushq %rcx              # 調用者保存
+	xorq %rax, %rax         # 歸零
+	andq %rdi, %rdi         # %rdi 是否爲 0
+	je end                  # 直接結束
+	mrmovq (%rdi), %rcx     # 取得當前鏈表中節點的 值
+	mrmovq 0x8(%rdi), %rdi  # 取得下一個節點的 地址
+	call rsum_list          # 遞歸調用
+	addq %rcx, %rax         # 相加
+end:
+	popq %rcx               # 調用者保存
+	ret
+
+
+# Stack starts here and grows to lower addresses
+	.pos 0x200
+stack:
