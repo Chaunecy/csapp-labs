@@ -30,10 +30,70 @@ ncopy:
 # You can modify this portion
 	# Loop header
 	xorq %rax,%rax		# count = 0;
-	iaddq $-7, %rdx     # 一個副作用，小於 7 的直接進入 Last
-	jle ForLessThan7
-	jmp Test
-Loop:
+	iaddq $-1, %rdx     # 對 len = 1 的優化
+	jne More
+	mrmovq (%rdi), %r10
+	irmovq $1, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	jmp Done
+More:                   # 對不等於 1 的
+	iaddq $-6, %rdx     # 一個副作用，小於 7 的直接進入 Last
+	jg Loop
+ForLessThan7:
+	iaddq $0x3, %rdx
+	jge Last
+	iaddq $0x4, %rdx
+	jne Fin
+	jmp Done
+Fin:                    # 剩下的不到 4 個
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	iaddq $0x8, %rdi
+	iaddq $0x8, %rsi
+	iaddq $-1, %rdx
+	jg Fin
+	jmp Done
+Last:                    # 剩下的有 4 個及以上
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	
+	mrmovq 0x8(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x8(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+
+	mrmovq 0x10(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x10(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	
+	mrmovq 0x18(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x18(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	
+	iaddq $0x20, %rdi
+	iaddq $0x20, %rsi
+	andq %rdx, %rdx
+	jg Fin
+	jmp Done
+Loop:                   # 大於 7 個
 	mrmovq (%rdi), %r10
 	rrmovq %rax, %r11
 	iaddq $0x1, %r11
@@ -95,58 +155,8 @@ Loop:
 	iaddq $-8, %rdx
 Test:
 	jg Loop			# if so, goto Loop:
-ForLessThan7:
-	iaddq $0x3, %rdx
-	jge Last
-	iaddq $0x4, %rdx
-	jne Fin
-	jmp Done
-Fin:
-	mrmovq (%rdi), %r10
-	rrmovq %rax, %r11
-	iaddq $0x1, %r11
-	rmmovq %r10, (%rsi)
-	andq %r10, %r10
-	cmovg %r11, %rax
-	iaddq $0x8, %rdi
-	iaddq $0x8, %rsi
-	iaddq $-1, %rdx
-	jg Fin
-	jmp Done
-Last:
-	
-	mrmovq (%rdi), %r10
-	rrmovq %rax, %r11
-	iaddq $0x1, %r11
-	rmmovq %r10, (%rsi)
-	andq %r10, %r10
-	cmovg %r11, %rax
-	
-	mrmovq 0x8(%rdi), %r10
-	rrmovq %rax, %r11
-	iaddq $0x1, %r11
-	rmmovq %r10, 0x8(%rsi)
-	andq %r10, %r10
-	cmovg %r11, %rax
+	jmp ForLessThan7
 
-	mrmovq 0x10(%rdi), %r10
-	rrmovq %rax, %r11
-	iaddq $0x1, %r11
-	rmmovq %r10, 0x10(%rsi)
-	andq %r10, %r10
-	cmovg %r11, %rax
-	
-	mrmovq 0x18(%rdi), %r10
-	rrmovq %rax, %r11
-	iaddq $0x1, %r11
-	rmmovq %r10, 0x18(%rsi)
-	andq %r10, %r10
-	cmovg %r11, %rax
-	
-	iaddq $0x20, %rdi
-	iaddq $0x20, %rsi
-	andq %rdx, %rdx
-	jg Fin
 ##################################################################
 # Do not modify the following section of code
 # Function epilogue.
