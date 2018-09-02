@@ -17,66 +17,57 @@ ncopy:
 # You can modify this portion
 	# Loop header
 	xorq %rax,%rax		# count = 0;
-	rrmovq %rdx, %rbx
-	irmovq $0x1, %r9    # const 1
-	irmovq $0x4, %r13   # const 2, stride
-	irmovq $0x3, %r14   # const 1, stride - 1
-	subq %r14, %rbx     # limit = len - stride + 1
-	irmovq $0x8, %r12   # const 8
+	iaddq $-3, %rdx     # limit = len - stride + 1
 	jmp Test
 Loop:
 	mrmovq (%rdi), %r10
 	rrmovq %rax, %r11
-	addq %r9, %r11
+	iaddq $0x1, %r11
 	rmmovq %r10, (%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	addq %r12, %rdi
-	addq %r12, %rsi
-	mrmovq (%rdi), %r10
+	
+	mrmovq 0x8(%rdi), %r10
 	rrmovq %rax, %r11
-	addq %r9, %r11
-	rmmovq %r10, (%rsi)
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x8(%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	addq %r12, %rdi
-	addq %r12, %rsi
 
-	mrmovq (%rdi), %r10
+	mrmovq 0x10(%rdi), %r10
 	rrmovq %rax, %r11
-	addq %r9, %r11
-	rmmovq %r10, (%rsi)
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x10(%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	addq %r12, %rdi
-	addq %r12, %rsi
-	mrmovq (%rdi), %r10
+	
+	mrmovq 0x18(%rdi), %r10
 	rrmovq %rax, %r11
-	addq %r9, %r11
-	rmmovq %r10, (%rsi)
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x18(%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	addq %r12, %rdi
-	addq %r12, %rsi
-	subq %r13, %rbx
+	
+	iaddq $0x20, %rdi
+	iaddq $0x20, %rsi
+	
+	iaddq $-4, %rdx
 Test:
-	andq %rbx, %rbx
 	jg Loop			# if so, goto Loop:
 
-	addq %rbx, %r14
-	andq %r14, %r14
-	je Done
+	iaddq $0x3, %rdx
+	jne Last
+	jmp Done
 Last:
 	mrmovq (%rdi), %r10
 	rrmovq %rax, %r11
-	addq %r9, %r11
+	iaddq $0x1, %r11
 	rmmovq %r10, (%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	addq %r12, %rdi
-	addq %r12, %rsi
-	subq %r9, %r14
-	andq %r14, %r14
+	iaddq $0x8, %rdi
+	iaddq $0x8, %rsi
+	iaddq $-1, %rdx
 	jg Last
 ##################################################################
 # Do not modify the following section of code
