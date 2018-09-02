@@ -30,22 +30,67 @@ ncopy:
 # You can modify this portion
 	# Loop header
 	xorq %rax,%rax		# count = 0;
-	andq %rdx,%rdx		# len <= 0?
-	jle Done		# if so, goto Done:
+	rrmovq %rdx, %rbx
+	irmovq $0x1, %r9    # const 1
+	irmovq $0x4, %r13   # const 2, stride
+	irmovq $0x3, %r14   # const 1, stride - 1
+	subq %r14, %rbx     # limit = len - stride + 1
+	irmovq $0x8, %r12   # const 8
+	jmp Test
+Loop:
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	addq %r9, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	addq %r12, %rdi
+	addq %r12, %rsi
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	addq %r9, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	addq %r12, %rdi
+	addq %r12, %rsi
 
-Loop:	mrmovq (%rdi), %r10	# read val from src...
-	rmmovq %r10, (%rsi)	# ...and store it to dst
-	andq %r10, %r10		# val <= 0?
-	jle Npos		# if so, goto Npos:
-	irmovq $1, %r10
-	addq %r10, %rax		# count++
-Npos:	irmovq $1, %r10
-	subq %r10, %rdx		# len--
-	irmovq $8, %r10
-	addq %r10, %rdi		# src++
-	addq %r10, %rsi		# dst++
-	andq %rdx,%rdx		# len > 0?
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	addq %r9, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	addq %r12, %rdi
+	addq %r12, %rsi
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	addq %r9, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	addq %r12, %rdi
+	addq %r12, %rsi
+	subq %r13, %rbx
+Test:
+	andq %rbx, %rbx
 	jg Loop			# if so, goto Loop:
+
+	addq %rbx, %r14
+	andq %r14, %r14
+	je Done
+Last:
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	addq %r9, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	addq %r12, %rdi
+	addq %r12, %rsi
+	subq %r9, %r14
+	andq %r14, %r14
+	jg Last
 ##################################################################
 # Do not modify the following section of code
 # Function epilogue.
@@ -62,10 +107,10 @@ EndFun:
 ###############################
 	.align 8
 src:
-	.quad 1
-	.quad -2
-	.quad 3
-	.quad -4
+	.quad -1
+	.quad 2
+	.quad -3
+	.quad 4
 	.quad 0xbcdefa # This shouldn't get moved
 
 	.align 16
