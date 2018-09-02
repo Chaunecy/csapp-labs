@@ -30,7 +30,8 @@ ncopy:
 # You can modify this portion
 	# Loop header
 	xorq %rax,%rax		# count = 0;
-	iaddq $-3, %rdx     # limit = len - stride + 1
+	iaddq $-7, %rdx     # 一個副作用，小於 7 的直接進入 Last
+	jle ForLessThan7
 	jmp Test
 Loop:
 	mrmovq (%rdi), %r10
@@ -39,8 +40,6 @@ Loop:
 	rmmovq %r10, (%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	# iaddq $0x8, %rdi
-	# iaddq $0x8, %rsi
 	
 	mrmovq 0x8(%rdi), %r10
 	rrmovq %rax, %r11
@@ -48,8 +47,6 @@ Loop:
 	rmmovq %r10, 0x8(%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	# iaddq $0x8, %rdi
-	# iaddq $0x8, %rsi
 
 	mrmovq 0x10(%rdi), %r10
 	rrmovq %rax, %r11
@@ -57,8 +54,87 @@ Loop:
 	rmmovq %r10, 0x10(%rsi)
 	andq %r10, %r10
 	cmovg %r11, %rax
-	# iaddq $0x8, %rdi
-	# iaddq $0x8, %rsi
+	
+	mrmovq 0x18(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x18(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	
+	mrmovq 0x20(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x20(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	
+	mrmovq 0x28(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x28(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+
+	mrmovq 0x30(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x30(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	
+	mrmovq 0x38(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x38(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	iaddq $0x40, %rdi
+	iaddq $0x40, %rsi
+	
+	iaddq $-8, %rdx
+Test:
+	jg Loop			# if so, goto Loop:
+ForLessThan7:
+	iaddq $0x3, %rdx
+	jge Last
+	iaddq $0x4, %rdx
+	jne Fin
+	jmp Done
+Fin:
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	iaddq $0x8, %rdi
+	iaddq $0x8, %rsi
+	iaddq $-1, %rdx
+	jg Fin
+	jmp Done
+Last:
+	
+	mrmovq (%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, (%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+	
+	mrmovq 0x8(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x8(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
+
+	mrmovq 0x10(%rdi), %r10
+	rrmovq %rax, %r11
+	iaddq $0x1, %r11
+	rmmovq %r10, 0x10(%rsi)
+	andq %r10, %r10
+	cmovg %r11, %rax
 	
 	mrmovq 0x18(%rdi), %r10
 	rrmovq %rax, %r11
@@ -69,25 +145,8 @@ Loop:
 	
 	iaddq $0x20, %rdi
 	iaddq $0x20, %rsi
-	
-	iaddq $-4, %rdx
-Test:
-	jg Loop			# if so, goto Loop:
-
-	iaddq $0x3, %rdx
-	jne Last
-	jmp Done
-Last:
-	mrmovq (%rdi), %r10
-	rrmovq %rax, %r11
-	iaddq $0x1, %r11
-	rmmovq %r10, (%rsi)
-	andq %r10, %r10
-	cmovg %r11, %rax
-	iaddq $0x8, %rdi
-	iaddq $0x8, %rsi
-	iaddq $-1, %rdx
-	jg Last
+	andq %rdx, %rdx
+	jg Fin
 ##################################################################
 # Do not modify the following section of code
 # Function epilogue.
@@ -106,8 +165,8 @@ EndFun:
 src:
 	.quad 1
 	.quad -2
-	.quad -3
-	.quad 4
+	.quad 3
+	.quad -4
 	.quad 0xbcdefa # This shouldn't get moved
 
 	.align 16
