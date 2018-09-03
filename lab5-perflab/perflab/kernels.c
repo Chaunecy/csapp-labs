@@ -10,10 +10,10 @@
  * Please fill in the following team struct 
  */
 team_t team = {
-    "bovik",              /* Team name */
+    "cc1000",              /* Team name */
 
-    "Harry Q. Bovik",     /* First member full name */
-    "bovik@nowhere.edu",  /* First member email address */
+    "Chaunecy WANG",     /* First member full name */
+    "chaunecy@outlook.com",  /* First member email address */
 
     "",                   /* Second member full name (leave blank if none) */
     ""                    /* Second member email addr (leave blank if none) */
@@ -45,9 +45,22 @@ void naive_rotate(int dim, pixel *src, pixel *dst)
  * IMPORTANT: This is the version you will be graded on
  */
 char rotate_descr[] = "rotate: Current working version";
+#define block 16
 void rotate(int dim, pixel *src, pixel *dst) 
 {
-    naive_rotate(dim, src, dst);
+    // naive_rotate(dim, src, dst);
+    int i, j;
+	int opt_dim = dim - 1; 
+    for (i = 0; i < dim; i+=block) {
+		for (j = 0; j < dim; j+=block) {
+			for (int a=i, end_a=i+block; a<end_a;a++) {
+				int tmp = a * dim;
+				for (int b=j,end_b=j+block; b<end_b; b++) {
+					dst[RIDX(opt_dim - b, a, dim)] = src[tmp + b];
+				}
+			}
+		}
+    }
 }
 
 /*********************************************************************
