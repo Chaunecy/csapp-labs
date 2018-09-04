@@ -1,5 +1,5 @@
 CC = gcc
-file = code.c
+file = foo5.c bar5.c
 tar = test
 
 test: $(file)
