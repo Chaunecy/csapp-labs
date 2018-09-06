@@ -6,8 +6,6 @@
 #include <unistd.h>
 
 #define BUFFER_SIZE 1024
-#define IDX(S, i, E) ((S) * (E) + (i))
-
 
 struct globalArgs_t {
 	int s;
@@ -25,7 +23,12 @@ typedef struct {
 	unsigned int used;
 } cache_line_t;
 
-cache_line_t *group;
+typedef struct {
+	int occupied;
+	unsigned int lru;
+	cache_line_t * line;
+} group_t;
+group_t *group;
 
 /**
  * 处理命令行参数。
@@ -66,60 +69,93 @@ void init_cache() {
 	int s = globalArgs.s;
 	int S = 1 << s;
 	int E = globalArgs.E;
-	group = (cache_line_t *) malloc(sizeof(cache_line_t) * S * E);
+	group = (group_t *) malloc(sizeof(group_t) * S);
 	if (group == NULL) {
 		printf("cannot allocate memory\n");
 		exit(1);
 	}
-	for (int i = 0, size = S * E; i < size; i++) {
-		group[i].valid = 0;
-		group[i].tag_bit = 0;
-		group[i].used = 0;
+	for (int i = 0; i < S; i++) {
+		group[i].occupied = 0;
+		group[i].lru = 1;
+		group[i].line = (cache_line_t *) malloc(sizeof(cache_line_t) * E);
+		if (group[i].line == NULL) {
+			printf("cannot allocate memory\n");
+			exit(1);
+		}
+		cache_line_t * tmp_line = group[i].line;
+		for (int j = 0; j < E; j++) {
+			tmp_line[j].valid = 0;
+			tmp_line[j].tag_bit = 0;
+			tmp_line[j].used = 0;
+		}
 	}
 }
 
 void free_cache() {
-
+	int s = globalArgs.s;
+	int S = 1 << s;
+	for (int i = 0; i < S; i++) {
+		free(group[i].line);
+	}
 	free(group);
-	group = NULL;
 }
 
 int hit = 0;
 int miss = 0;
 int evict = 0;
-int counter = 1;
+
 char * parse_load(int S, int tag_bit, int B, int size) {
-	int E = globalArgs.E;
-	for (int i = 0; i < E; i++) {
-		if (group[IDX(S, i, E)].valid && group[IDX(S, i, E)].tag_bit == tag_bit) {
-			hit++;
-			group[IDX(S, i, E)].used = counter++;
-			return "hit";
+	group_t *g = &group[S];
+	int idx = -1;
+	cache_line_t * line = g->line;
+	for (int i = 0; i < globalArgs.E; i++) {
+		if (line[i].tag_bit == tag_bit && line[i].valid == 1) {
+			idx = i;
+			break;
 		}
 	}
-	miss++;
-	for (int i = 0; i < E; i++) {
+	// 找到了
+	if (idx != -1) {
+		hit++;
+		line[idx].used = g->lru++;
+		g->occupied = (g->occupied < globalArgs.E) ? (g->occupied + 1) : g->occupied;
 		
-		if (group[IDX(S, i, E)].valid == 0) {
-			group[IDX(S, i, E)].valid = 1;
-			group[IDX(S, i, E)].tag_bit = tag_bit;
-			group[IDX(S, i, E)].used = counter++;
+		return "hit";
+	} else { // 没找到
+		miss++;
+		// 还有 valid = 0 的位置
+		// printf("occupied: %d\n", g.occupied);
+		if (g->occupied < globalArgs.E) {
+			for (int i = 0; i < globalArgs.E; i++) {
+				if (line[i].valid == 0) {
+					line[i].valid = 1;
+					line[i].tag_bit = tag_bit;
+					line[i].used = g->lru++;
+					break;
+				}
+			}
 			return "miss";
+		} else {
+			evict++;
+			int min = g->lru;
+			int min_idx = -1;
+			for (int i = 0; i < globalArgs.E; i++) {
+				if (line[i].used < min) {
+					min_idx = i;
+					min = line[i].used;
+				}
+			}
+			if (min_idx != -1) {
+				line[min_idx].valid = 1;
+				line[min_idx].used = g->lru++;
+				line[min_idx].tag_bit = tag_bit;
+			} else {
+				printf("you should never see this!\n");
+				exit(-1);
+			}
+			return "miss eviction";
 		}
 	}
-	evict++;
-	int min_idx = -1;
-	int min_val = counter;
-	for (int i = 0; i < E; i++) {
-		if (group[IDX(S, i, E)].used < min_val) {
-			min_idx = i;
-			min_val = group[IDX(S, i, E)].used;
-		}
-	}
-	if (min_idx != -1) {
-		group[IDX(S,min_idx, E)].tag_bit = tag_bit;
-	}
-	return "miss evict";
 }
 
 void parse_line(char * strbuf) {
@@ -134,8 +170,8 @@ void parse_line(char * strbuf) {
 	int S = (addr >> globalArgs.b) & ((1 << globalArgs.b) - 1);
 	int tag_bit = (addr >> (globalArgs.b + globalArgs.s));
 	int B = addr & ((1 << globalArgs.b) - 1);
-	printf("%u,%u,%d%d\n", S, tag_bit, B,(int)size);
-	char * desc = "";
+	
+	char * desc;
 	switch(strbuf[1]) {
 		case 'L':
 			desc = parse_load(S, tag_bit, B, size);
@@ -147,9 +183,8 @@ void parse_line(char * strbuf) {
 			break;
 		case 'M':
 			desc = parse_load(S, tag_bit, B, size);
-			hit++;
-			//char * desc1 = parse_load(S, tag_bit, B, size);
-			printf("%s %s hit\n", strbuf, desc);
+			char * desc1 = parse_load(S, tag_bit, B, size);
+			printf("%s %s %s\n", strbuf, desc, desc1);
 			break;
 		default:
 			break;
@@ -176,16 +211,15 @@ int main(int argc, char **argv)
 		}
 		if (!feof(fp)) {
 			//printf("%s\n", strbuf);
-			 parse_line(strbuf);
+			parse_line(strbuf);
 		}		
 
 	}
 	
 	printf("s: %d, E: %d\n", globalArgs.s, globalArgs.E);
 	
-    printSummary(hit, miss, evict);
+    printSummary(0, 0, 0);
     free_cache();
-    fclose(fp);
     return 0;
 }
 
