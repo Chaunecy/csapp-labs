@@ -137,24 +137,15 @@ void parse_line(char * strbuf) {
 	int B = addr & ((1 << globalArgs.b) - 1);
 	//printf("S: 0x%8x, tag_bit: %8x, B: %8d, size: %8d\t\t", S, tag_bit, B,(int)size);
 	char * desc = "";
-	switch(strbuf[1]) {
-		case 'L':
-			desc = parse_load(S, tag_bit, B, size);
-			printf("%s %s\n", strbuf, desc);
-			break;
-		case 'S':
-			desc = parse_load(S, tag_bit, B, size);
-			printf("%s %s\n", strbuf, desc);
-			break;
-		case 'M':
-			desc = parse_load(S, tag_bit, B, size);
-			hit++;
-			//char * desc1 = parse_load(S, tag_bit, B, size);
-			printf("%s %s hit\n", strbuf, desc);
-			break;
-		default:
-			break;
+	desc = parse_load(S, tag_bit, B, size);
+
+	if (strbuf[1] == 'M') {
+		hit++;
+		printf("%s %s hit\n", strbuf, desc);
+	} else {
+		printf("%s %s\n", strbuf, desc);
 	}
+
 }
 
 int main(int argc, char **argv)
