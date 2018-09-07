@@ -118,6 +118,7 @@ char * parse_load(int S, int tag_bit, int B, int size) {
 	}
 	if (min_idx != -1) {
 		group[IDX(S,min_idx, E)].tag_bit = tag_bit;
+		group[IDX(S,min_idx, E)].used = counter++;
 	}
 	return "miss evict";
 }
@@ -131,10 +132,10 @@ void parse_line(char * strbuf) {
 	addr = strtol(strbuf + 3, &pEnd, 16);
 	size = strtol(pEnd + 1, NULL, 16);
 	
-	int S = (addr >> globalArgs.b) & ((1 << globalArgs.b) - 1);
+	int S = (addr >> globalArgs.b) & ((1 << globalArgs.s) - 1);
 	int tag_bit = (addr >> (globalArgs.b + globalArgs.s));
 	int B = addr & ((1 << globalArgs.b) - 1);
-	printf("%u,%u,%d%d\n", S, tag_bit, B,(int)size);
+	//printf("S: 0x%8x, tag_bit: %8x, B: %8d, size: %8d\t\t", S, tag_bit, B,(int)size);
 	char * desc = "";
 	switch(strbuf[1]) {
 		case 'L':
