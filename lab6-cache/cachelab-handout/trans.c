@@ -22,6 +22,43 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+	int i, j, tmp;
+	int stride = 8, a, b, end_a, end_b;
+	// M 與 N 不相等，或者 M 不是 8 的整數倍  
+	if ((M != N) || (M & 7) || (N & 7)) {
+	    //int dm = M & (~7);
+	    int rm = M & 7;
+	    
+	    //int dn = N & (~7);
+	    int rn = N & 7;
+	    
+	    for (i = N - rn; i < N; i++) {
+	    	for (j = 0; j < M - rm; j++) {
+	    		tmp = A[i][j];
+	    		B[j][i] = tmp;
+	    	}
+	    }
+	    for (i = 0; i < N; i++) {
+	    	for (j = M - rm; j < M; j++) {
+	    		tmp = A[i][j];
+	    		B[j][i] = tmp;
+	    	}
+	    }
+	    
+	    M = M - rm;
+	    N = N -rn;
+	}
+	for (i = 0; i < N; i+=stride) {
+		for (j = 0; j < M; j+=stride) {      
+			for (a = i, end_a=i+stride; a<end_a;a++) {        
+				for (b=j, end_b=j+stride; b<end_b; b++) {         
+					 tmp = A[a][b];          
+					 B[b][a] = tmp;        
+				}
+			}
+		}
+	}
+
 }
 
 /* 
