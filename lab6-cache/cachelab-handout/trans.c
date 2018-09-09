@@ -23,14 +23,14 @@ char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
 	int i, j, tmp;
-	int stride = 8, a, b, end_a, end_b;
+	int stride = 8, a, b, tmp1, tmp2, tmp3, tmp4, rm, rn;
 	// M 與 N 不相等，或者 M 不是 8 的整數倍  
 	if ((M != N) || (M & 7) || (N & 7)) {
 	    //int dm = M & (~7);
-	    int rm = M & 7;
+	    rm = M & 7;
 	    
 	    //int dn = N & (~7);
-	    int rn = N & 7;
+	    rn = N & 7;
 	    
 	    for (i = N - rn; i < N; i++) {
 	    	for (j = 0; j < M - rm; j++) {
@@ -50,11 +50,26 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 	}
 	for (i = 0; i < N; i+=stride) {
 		for (j = 0; j < M; j+=stride) {      
-			for (a = i, end_a=i+stride; a<end_a;a++) {        
-				for (b=j, end_b=j+stride; b<end_b; b++) {         
-					 tmp = A[a][b];          
-					 B[b][a] = tmp;        
-				}
+			for (a = i; a<i+stride;a++) {  
+				tmp = A[a][j];
+				tmp1 = A[a][j + 1];
+				tmp2 = A[a][j + 2];
+				rm = A[a][j + 3];
+				rn = A[a][j + 4];
+				b = A[a][j + 5];
+				tmp3 = A[a][j + 6];
+				tmp4 = A[a][j + 7];
+				        
+					         
+				B[j][a] = tmp;
+				B[j+1][a] = tmp1;
+				B[j+2][a] = tmp2;
+				B[j+3][a] = rm;
+				B[j+4][a] = rn;
+				B[j+5][a] = b;
+				B[j+6][a] = tmp3;
+				B[j+7][a] = tmp4;        
+				
 			}
 		}
 	}
