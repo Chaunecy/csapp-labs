@@ -24,6 +24,54 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
 	int i, j, tmp;
 	int stride = 8, a, b, tmp1, tmp2, tmp3, tmp4, rm, rn;
+	
+	
+	if (M == 64 && N == 64) {
+		for (i = 0; i < 64; i += 4) {
+			for (j = 0; j < 64; j += 4) {
+				tmp = A[i][j];
+				tmp1 = A[i][j+1];
+				tmp2 = A[i][j+2];
+				stride = A[i][j+3];
+				
+				rm = A[i+1][j];
+				rn = A[i+1][j+1];
+				b = A[i+1][j+2];
+				M = A[i+1][j+3];
+				
+				tmp3 = A[i+2][j];
+				tmp4 = A[i+2][j+1];
+				a = A[i+2][j+2];
+				N = A[i+2][j+3];
+				
+				B[j][i] = tmp;
+				B[j][i+1] = rm;
+				B[j][i+2] = tmp3;
+
+				
+				tmp = A[i+3][j+1];
+				rm = A[i+3][j+2];
+				tmp3 = A[i+3][j+3];
+				B[j][i+3] = A[i+3][j];
+				
+				B[j+1][i] = tmp1;
+				B[j+1][i+1] = rn;
+				B[j+1][i+2] = tmp4;
+				B[j+1][i+3] = tmp;
+				
+				B[j+2][i] = tmp2;
+				B[j+2][i+1] = b;
+				B[j+2][i+2] = a;
+				B[j+2][i+3] = rm;
+				
+				B[j+3][i] = stride;
+				B[j+3][i+1] = M;
+				B[j+3][i+2] = N;
+				B[j+3][i+3] = tmp3;
+			}
+		}
+		return;
+	}
 	// M 與 N 不相等，或者 M 不是 8 的整數倍  
 	if ((M != N) || (M & 7) || (N & 7)) {
 	    //int dm = M & (~7);
