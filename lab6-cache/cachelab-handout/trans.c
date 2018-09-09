@@ -27,8 +27,67 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 	
 	
 	if (M == 64 && N == 64) {
-		for (i = 0; i < 64; i += 4) {
-			for (j = 0; j < 64; j += 4) {
+		for (i = 0; i < 64; i += 8) {
+			for (j = 0; j < 64; j += 8) {
+				for (a = i; a < i+4; a++) {
+					tmp1 = A[a][j];
+					tmp2 = A[a][j+1];
+					tmp3 = A[a][j+2];
+					tmp4 = A[a][j+3];
+					
+					tmp = A[a][j+4];
+					rm = A[a][j+5];
+					rn = A[a][j+6];
+					stride = A[a][j+7];
+					
+					
+					B[j][a] = tmp1;
+					B[j][a+4] = tmp;
+					B[j+1][a] = tmp2;
+					B[j+1][a+4] = rm;
+					B[j+2][a] = tmp3;
+					B[j+2][a+4] = rn;
+					B[j+3][a] = tmp4;
+					B[j+3][a+4] = stride;
+				}
+				
+				for (a = j; a < j+4; a++) {
+					tmp = B[a][i+4];
+					rm = B[a][i+5];
+					rn = B[a][i+6];
+					stride = B[a][i+7];
+					
+					tmp1 = A[i+4][a];
+					tmp2 = A[i+5][a];
+					tmp3 = A[i+6][a];
+					tmp4 = A[i+7][a];
+					
+					B[a][i+4] = tmp1;
+					B[a][i+5] = tmp2;
+					B[a][i+6] = tmp3;
+					B[a][i+7] = tmp4;
+					
+					B[a+4][i] = tmp;
+					B[a+4][i+1] = rm;
+					B[a+4][i+2] = rn;
+					B[a+4][i+3] = stride;
+				}
+
+
+				
+				for (a = j+4; a < j + 8; a++) {
+					tmp1 = A[i+4][a];
+					tmp2 = A[i+5][a];
+					tmp3 = A[i+6][a];
+					tmp4 = A[i+7][a];
+					
+					B[a][i+4] = tmp1;
+					B[a][i+5] = tmp2;
+					B[a][i+6] = tmp3;
+					B[a][i+7] = tmp4;
+				}
+
+/*
 				tmp = A[i][j];
 				tmp1 = A[i][j+1];
 				tmp2 = A[i][j+2];
@@ -68,6 +127,7 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 				B[j+3][i+1] = M;
 				B[j+3][i+2] = N;
 				B[j+3][i+3] = tmp3;
+*/
 			}
 		}
 		return;
