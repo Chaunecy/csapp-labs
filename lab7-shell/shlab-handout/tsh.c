@@ -340,7 +340,7 @@ void do_bgfg(char **argv)
 	
 	if (!strcmp(argv[0], "bg")) {
 		job->state = BG;
-		printf("[%d] (%d) %s\n", job->jid, job->pid, job->cmdline);
+		printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
 	} else {
 		job->state = FG;
 		waitfg(job->pid);
