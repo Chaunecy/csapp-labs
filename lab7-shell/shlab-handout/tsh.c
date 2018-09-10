@@ -353,14 +353,13 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-	struct job_t *job;
 	if (pid == 0) {
 		return;
 	}
-	job = getjobpid(jobs, pid);
-	if (job != NULL) {
-		while(pid == fgpid(jobs)){}
+	while(pid == fgpid(jobs)) {
+		;
 	}
+
 
     return;
 }
